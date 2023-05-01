@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const crypto = require('crypto');
+const EC = require('elliptic').ec;
 
 const WORD_LIST_FILE = './english.json';
 const HASH_ALG = 'sha256';
@@ -11,6 +12,8 @@ const SALT_BASE = "mnemonic";
 const NUM_PBKDF2_ROUNDS = 2048;
 const KEY_LENGTH = 64; // 64 bytes = 512 bits
 const PBKDF2_DIGEST = 'sha512'; // Should be 'hmac-sha512'
+
+const ec = new EC('secp256k1');
 
 class Mnemonic {
 
@@ -171,6 +174,24 @@ class Mnemonic {
         let key = crypto.pbkdf2Sync(this.seq, SALT_BASE + passphrase, NUM_PBKDF2_ROUNDS, KEY_LENGTH, PBKDF2_DIGEST);
         return key.toString('hex');
     }
+
+    generateMasterKey(seed){
+        let masterKey = crypto.pbkdf2Sync(seed, "Bitcoin seed", NUM_PBKDF2_ROUNDS, KEY_LENGTH, PBKDF2_DIGEST);
+        return masterKey.toString('hex');
+    }
+
+    generateKeys(masterKey){
+        let privateKey = masterKey.substr(0, masterKey.length/2);
+        let chainCode = masterKey.substr(masterKey.length/2, masterKey.length);
+        let publicKey = ec.keyFromPrivate(privateKey).getPublic('hex');
+        return [privateKey, chainCode, publicKey];
+
+    }
+
+    
+
+
+
 }
 
 exports.Mnemonic = Mnemonic;
