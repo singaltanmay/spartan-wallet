@@ -9,6 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "elliptic": "^6.5.4"
+    "bip32": "^4.0.0",
+    "bitcoinjs-lib": "^6.1.0",
+    "elliptic": "^6.5.4",
+    "tiny-secp256k1": "^2.2.1"
   }
 }

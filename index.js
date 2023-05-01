@@ -1,8 +1,8 @@
 "use strict";
 
-const Mnemonic = require("./mnemonic.js").Mnemonic;
+const KeyGenerator = require("./key-generator.js").KeyGenerator;
 
-let m = new Mnemonic();
+let m = new KeyGenerator();
 
 let seed = m.generateSeed();
 
@@ -11,8 +11,12 @@ m.printMnemonic();
 console.log("The seed is " + seed);
 
 let masterKey = m.generateMasterKey(seed);
-let keys = m.generateKeys(masterKey);
-console.log("privateKey: " + keys[0]);
-console.log("chainCode: " + keys[1]);
+let [privateKey, publicKey] = m.generateKeys(masterKey);
+console.log("privateKey: " + privateKey);
+console.log("chainCode: " + publicKey);
 //console.log("publicKey: " + keys[2]);
 
+const masterNode = m.generateMasterNode(masterKey);
+
+console.log("masterExtendedPublicKey: " + masterNode.masterExtendedPublicKey)
+console.log("masterChainCode: " + masterNode.masterChainCode)
