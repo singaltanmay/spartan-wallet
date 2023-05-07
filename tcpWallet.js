@@ -2,7 +2,7 @@ const net = require('net');
 const readline = require('readline');
 const { readFileSync, writeFileSync } = require('fs');
 
-const {FakeNet, Miner, Block, Blockchain, Transaction} = require('spartan-gold')
+const {FakeNet, Client, Block, Blockchain, Transaction} = require('spartan-gold')
 
 /**
  * This extends the FakeNet class to actually communicate over the network.
@@ -22,7 +22,7 @@ class TcpWallet extends FakeNet {
  * Provides a command line interface for a SpartanGold miner
  * that will actually communicate over the network.
  */
-class TcpMiner extends Miner {
+class TcpClient extends Client {
     static get REGISTER() { return "REGISTER"; }
 
     /**
@@ -30,8 +30,8 @@ class TcpMiner extends Miner {
      * also takes a JSON object for the connection information and sets
      * up a listener to listen for incoming connections.
      */
-    constructor({name, startingBlock, miningRounds, keyPair, connection} = {}) {
-        super({name, net: new TcpWallet(), startingBlock, keyPair, miningRounds});
+    constructor({name, startingBlock, keyPair, connection} = {}) {
+        super({name, net: new TcpWallet(), startingBlock, keyPair});
 
         // Setting up the server to listen for connections
         this.connection = connection;
@@ -40,7 +40,7 @@ class TcpMiner extends Miner {
             this.log('Received connection');
             client.on('data', (data) => {
                 let {msg, o} = JSON.parse(data);
-                if (msg === TcpMiner.REGISTER) {
+                if (msg === TcpClient.REGISTER) {
                     if (!this.net.recognizes(o)) {
                         this.registerWith(o.connection);
                     }
@@ -62,7 +62,7 @@ class TcpMiner extends Miner {
         this.log(`Connection: ${JSON.stringify(minerConnection)}`);
         let conn = net.connect(minerConnection, () => {
             let data = {
-                msg: TcpMiner.REGISTER,
+                msg: TcpClient.REGISTER,
                 o: {
                     name: this.name,
                     address: this.address,
@@ -78,7 +78,6 @@ class TcpMiner extends Miner {
      */
     initialize(knownMinerConnections) {
         this.knownMiners = knownMinerConnections;
-        super.initialize();
         this.srvr.listen(this.connection.port);
         for (let m of knownMinerConnections) {
             this.registerWith(m);
@@ -128,7 +127,7 @@ let genesis = Blockchain.makeGenesis({
 });
 
 console.log(`Starting ${name}`);
-let minnie = new TcpMiner({name: name, keyPair: config.keyPair, connection: config.connection, startingBlock: genesis});
+let minnie = new TcpClient({name: name, keyPair: config.keyPair, connection: config.connection, startingBlock: genesis});
 
 // Silencing the logging messages
 minnie.log = function(){};
