@@ -127,13 +127,13 @@ let genesis = Blockchain.makeGenesis({
 });
 
 console.log(`Starting ${name}`);
-let minnie = new TcpClient({name: name, keyPair: config.keyPair, connection: config.connection, startingBlock: genesis});
+let client = new TcpClient({name: name, keyPair: config.keyPair, connection: config.connection, startingBlock: genesis});
 
 // Silencing the logging messages
-minnie.log = function(){};
+client.log = function(){};
 
 // Register with known miners and begin mining.
-minnie.initialize(knownMiners);
+client.initialize(knownMiners);
 
 let rl = readline.createInterface({
     input: process.stdin,
@@ -142,9 +142,9 @@ let rl = readline.createInterface({
 
 function readUserInput() {
     rl.question(`
-  Funds: ${minnie.availableGold}
-  Address: ${minnie.address}
-  Pending transactions: ${minnie.showPendingOut()}
+  Funds: ${client.availableGold}
+  Address: ${client.address}
+  Pending transactions: ${client.showPendingOut()}
   
   What would you like to do?
   *(c)onnect to miner?
@@ -164,11 +164,11 @@ function readUserInput() {
             /* falls through */
             case 'b':
                 console.log("  Balances: ");
-                minnie.showAllBalances();
+                client.showAllBalances();
                 break;
             case 'c':
                 rl.question(`  port: `, (p) => {
-                    minnie.registerWith({port: p});
+                    client.registerWith({port: p});
                     console.log(`Registering with miner at port ${p}`);
                     readUserInput();
                 });
@@ -176,36 +176,36 @@ function readUserInput() {
             case 't':
                 rl.question(`  amount: `, (amt) => {
                     amt = parseInt(amt, 10);
-                    if (amt > minnie.availableGold) {
-                        console.log(`***Insufficient gold.  You only have ${minnie.availableGold}.`);
+                    if (amt > client.availableGold) {
+                        console.log(`***Insufficient gold.  You only have ${client.availableGold}.`);
                         readUserInput();
                     } else {
                         rl.question(`  address: `, (addr) => {
                             let output = {amount: amt, address: addr};
                             console.log(`Transferring ${amt} gold to ${addr}.`);
-                            minnie.postTransaction([output]);
+                            client.postTransaction([output]);
                             readUserInput();
                         });
                     }
                 });
                 break;
             case 'r':
-                minnie.resendPendingTransactions();
+                client.resendPendingTransactions();
                 break;
             case 's':
                 rl.question(`  file name: `, (fname) => {
-                    minnie.saveJson(fname);
+                    client.saveJson(fname);
                     readUserInput();
                 });
                 break;
             case 'd':
-                minnie.blocks.forEach((block) => {
+                client.blocks.forEach((block) => {
                     let s = "";
                     block.transactions.forEach((tx) => s += `${tx.id} `);
                     if (s !== "") console.log(`${block.id} transactions: ${s}`);
                 });
                 console.log();
-                minnie.showBlockchain();
+                client.showBlockchain();
                 process.exit(0);
             /* falls through */
             default:
