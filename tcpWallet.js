@@ -107,11 +107,6 @@ class TcpClient extends Client {
 
 }
 
-if (process.argv.length !== 3) {
-    console.error(`Usage: ${process.argv[0]} ${process.argv[1]} <config.json>`);
-    process.exit();
-}
-let config = JSON.parse(readFileSync(process.argv[2]));
 let name = config.name;
 
 let knownMiners = config.knownMiners || [];
