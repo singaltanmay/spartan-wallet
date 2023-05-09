@@ -4,6 +4,7 @@ const {readFileSync} = require("fs");
 const readline = require('readline');
 const {Blockchain, Block, Transaction} = require("spartan-gold");
 const TcpClient = require("./tcpWallet");
+const AccountsManager = require("./accounts-manager");
 
 if (process.argv.length !== 3) {
     console.error(`Usage: ${process.argv[0]} ${process.argv[1]} <config.json>`);
@@ -115,10 +116,15 @@ function readUserInput() {
     });
 }
 
-
 let rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
+
+let accountsManager = new AccountsManager();
+accountsManager.createNewAccount("path", "my-account", "privKey", "pubKey", 10000);
+accountsManager.createNewAccount("path2", "another-account", "privKey2", "pubKey2", 5000);
+
+console.table(accountsManager.getAllBalances());
 
 readUserInput();
