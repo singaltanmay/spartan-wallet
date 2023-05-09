@@ -1,6 +1,6 @@
 const net = require('net');
-const readline = require('readline');
-const { readFileSync, writeFileSync } = require('fs');
+
+const { writeFileSync } = require('fs');
 
 const {FakeNet, Client, Block, Blockchain, Transaction} = require('spartan-gold')
 
@@ -22,7 +22,7 @@ class TcpWallet extends FakeNet {
  * Provides a command line interface for a SpartanGold miner
  * that will actually communicate over the network.
  */
-class TcpClient extends Client {
+module.exports = class TcpClient extends Client {
     static get REGISTER() { return "REGISTER"; }
 
     /**
@@ -107,109 +107,5 @@ class TcpClient extends Client {
 
 }
 
-let name = config.name;
 
-let knownMiners = config.knownMiners || [];
-
-// Clearing the screen so things look a little nicer.
-console.clear();
-
-let startingBalances = config.genesis ? config.genesis.startingBalances : {};
-let genesis = Blockchain.makeGenesis({
-    blockClass: Block,
-    transactionClass: Transaction,
-    startingBalances: startingBalances
-});
-
-console.log(`Starting ${name}`);
-let client = new TcpClient({name: name, keyPair: config.keyPair, connection: config.connection, startingBlock: genesis});
-
-// Silencing the logging messages
-client.log = function(){};
-
-// Register with known miners and begin mining.
-client.initialize(knownMiners);
-
-let rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-function readUserInput() {
-    rl.question(`
-  Funds: ${client.availableGold}
-  Address: ${client.address}
-  Pending transactions: ${client.showPendingOut()}
-  
-  What would you like to do?
-  *(c)onnect to miner?
-  *(t)ransfer funds?
-  *(r)esend pending transactions?
-  *show (b)alances?
-  *show blocks for (d)ebugging and exit?
-  *(s)ave your state?
-  *e(x)it without saving?
-  
-  Your choice: `, (answer) => {
-        console.clear();
-        switch (answer.trim().toLowerCase()) {
-            case 'x':
-                console.log(`Shutting down.  Have a nice day.`);
-                process.exit(0);
-            /* falls through */
-            case 'b':
-                console.log("  Balances: ");
-                client.showAllBalances();
-                break;
-            case 'c':
-                rl.question(`  port: `, (p) => {
-                    client.registerWith({port: p});
-                    console.log(`Registering with miner at port ${p}`);
-                    readUserInput();
-                });
-                break;
-            case 't':
-                rl.question(`  amount: `, (amt) => {
-                    amt = parseInt(amt, 10);
-                    if (amt > client.availableGold) {
-                        console.log(`***Insufficient gold.  You only have ${client.availableGold}.`);
-                        readUserInput();
-                    } else {
-                        rl.question(`  address: `, (addr) => {
-                            let output = {amount: amt, address: addr};
-                            console.log(`Transferring ${amt} gold to ${addr}.`);
-                            client.postTransaction([output]);
-                            readUserInput();
-                        });
-                    }
-                });
-                break;
-            case 'r':
-                client.resendPendingTransactions();
-                break;
-            case 's':
-                rl.question(`  file name: `, (fname) => {
-                    client.saveJson(fname);
-                    readUserInput();
-                });
-                break;
-            case 'd':
-                client.blocks.forEach((block) => {
-                    let s = "";
-                    block.transactions.forEach((tx) => s += `${tx.id} `);
-                    if (s !== "") console.log(`${block.id} transactions: ${s}`);
-                });
-                console.log();
-                client.showBlockchain();
-                process.exit(0);
-            /* falls through */
-            default:
-                console.log(`Unrecognized choice: ${answer}`);
-        }
-        console.log();
-        setTimeout(readUserInput, 0);
-    });
-}
-
-readUserInput();
 

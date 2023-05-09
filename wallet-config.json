@@ -2,7 +2,7 @@
   "name": "Spartan Wallet",
   "connection": {
     "hostname": "localhost",
-    "port": 9069
+    "port": 9000
   },
   "keyPair": {
     "public": "-----BEGIN PUBLIC KEY-----\nMFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAK/ew1m8sR0bdp6UO9BDyr/oBiP4ERJN\nILyc/sET3hEH1Xv2yxZ+JLOZVo+D0VEHVMNrF3jgRtpQzCuIdvsWQ5kCAwEAAQ==\n-----END PUBLIC KEY-----\n",
