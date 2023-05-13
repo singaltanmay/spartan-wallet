@@ -12,8 +12,6 @@ if (process.argv.length !== 3) {
 }
 const walletConfig = JSON.parse(readFileSync(process.argv[2]));
 
-console.log(walletConfig);
-
 let name = walletConfig.name;
 
 let knownMiners = walletConfig.knownMiners || [];
@@ -29,7 +27,22 @@ console.log(`Starting ${name}`);
 let client = new TcpClient({
     name: name,
     keyPair: walletConfig.keyPair,
-    connection: walletConfig.connection,
+    connection: {
+        "hostname": "localhost",
+        "port": 9000
+    },
+    startingBlock: genesis
+});
+let client2 = new TcpClient({
+    name: "another client",
+    keyPair: {
+        "public": "-----BEGIN PUBLIC KEY-----\nMFwwDQYJKoZIhvcXAQEBBQADSwAwSAJBAK/ew1m8sR0bdp6UO9BDyr/oBiP4ERJN\nILyc/sET3hEH1Xv2yxZ+JLOZVo+D0VEHVMNrF3jgRtpQzCuIdvsWQ5kCAwEAAQ==\n-----END PUBLIC KEY-----\n",
+        "private": "-----BEGIN PRIVATE KEY-----\nMIIBVwIBADANBgbqhkiG9w0BAQEFAASCAUEwggE9AgEAAkEAr97DWbyxHRt2npQ7\n0EPKv+gGI/gREk0gvJz+wRPeEQfVe/bLFn4ks5lWj4PRUQdUw2sXeOBG2lDMK4h2\n+xZDmQIDAQABAkEAjZ4exlMId/zWbunEpHcCe7f1wd8OuCL9WoQ9K/K4nhLQGnCM\n2U84Lvt0XigCn1knCxUtLkAWN71pPID8OR5mgQIhANZagAaqr+3WqeUGoZvlbyGu\nSdJz/qPTvEdbezZgz+2RAiEA0gouVM0Tpg0QQjIuNHj9OBA3AWi6PqVAjvOeM1Wx\nkYkCIQCfHT67tCgz3IzwvSNpnb4Iul+CISh8Y8f3ECk+DE9MgQIhAMgTYqbs4vae\nIwqrelAJoEwzRfJVrHPYPnLtpZkI3CjhAiEAwX5FsFw43JWKK3TcsI7sSj7S8LcH\n3SFbAM8/lr1+yxY=\n-----END PRIVATE KEY-----\n"
+    },
+    connection: {
+        "hostname": "localhost",
+        "port": 9022
+    },
     startingBlock: genesis
 });
 
@@ -39,6 +52,7 @@ client.log = function () {
 
 // Register with known miners and begin mining.
 client.initialize(knownMiners);
+client2.initialize(knownMiners);
 
 function readUserInput() {
     rl.question(`
@@ -77,7 +91,7 @@ function readUserInput() {
                 rl.question(`  amount: `, (amt) => {
                     amt = parseInt(amt, 10);
                     if (amt > client.availableGold) {
-                        console.log(`***Insufficient gold.  You only have ${client.availableGold}.`);
+                        console.log(`***Insufficient gold. You only have ${client.availableGold}.`);
                         readUserInput();
                     } else {
                         rl.question(`  address: `, (addr) => {

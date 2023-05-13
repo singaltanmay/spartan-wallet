@@ -1,6 +1,6 @@
 const net = require('net');
 
-const { writeFileSync } = require('fs');
+const {writeFileSync} = require('fs');
 
 const {FakeNet, Client, Block, Blockchain, Transaction} = require('spartan-gold')
 
@@ -23,8 +23,6 @@ class TcpWallet extends FakeNet {
  * that will actually communicate over the network.
  */
 module.exports = class TcpClient extends Client {
-    static get REGISTER() { return "REGISTER"; }
-
     /**
      * In addition to the usual properties for a miner, the constructor
      * also takes a JSON object for the connection information and sets
@@ -51,6 +49,10 @@ module.exports = class TcpClient extends Client {
                 }
             });
         });
+    }
+
+    static get REGISTER() {
+        return "REGISTER";
     }
 
     /**
