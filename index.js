@@ -2,7 +2,7 @@
 
 const KeyGenerator = require("./key-generator.js").KeyGenerator;
 
-let m = new KeyGenerator();
+let m = new KeyGenerator(walletConfig.mnemonic);
 
 let seed = m.generateSeed();
 
@@ -30,7 +30,8 @@ console.log(childNode.publicKey);
 const childExtendedPublicKey = childNode.neutered().toBase58();
 const childChainCode = childNode.chainCode.toString('hex');
 
-console.log(childNode)
+// console.log(childNode)
+//
+// console.log(childExtendedPublicKey);
+// console.log(childChainCode);
 
-console.log(childExtendedPublicKey);
-console.log(childChainCode);
