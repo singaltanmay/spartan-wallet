@@ -3,6 +3,7 @@ const net = require('net');
 const {writeFileSync} = require('fs');
 
 const {FakeNet, Client, Block, Blockchain, Transaction} = require('spartan-gold')
+const AccountsManager = require("./accounts-manager");
 
 /**
  * This extends the FakeNet class to actually communicate over the network.
@@ -95,6 +96,32 @@ module.exports = class TcpClient extends Client {
             s += `\n    id:${tx.id} nonce:${tx.nonce} totalOutput: ${tx.totalOutput()}\n`;
         });
         return s;
+    }
+
+    showAllBalances() {
+        this.log("Showing balances:");
+        let accountsManager = new AccountsManager();
+        for (let [id, balance] of this.lastConfirmedBlock.balances) {
+            const account = accountsManager.getAccountByAddress(id)
+            let walletContextString = '<remote>  ';
+            if(account !== undefined){
+                const {alias, path} = account
+                if (alias !== undefined && alias !== " ") {
+                    walletContextString = `<${path}>:(${alias})`
+                }
+            }
+            console.log(`${walletContextString} ${id}: ${balance}`);
+        }
+    }
+
+
+    get availableGold() {
+        let pendingSpent = 0;
+        this.pendingOutgoingTransactions.forEach((tx) => {
+            pendingSpent += tx.totalOutput();
+        });
+
+        return this.confirmedBalance - pendingSpent;
     }
 
     saveJson(fileName) {

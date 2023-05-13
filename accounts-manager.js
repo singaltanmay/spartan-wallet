@@ -1,5 +1,6 @@
 "use strict";
 
+const {utils} = require("spartan-gold");
 const accounts = new Map();
 
 module.exports = class AccountsManager {
@@ -14,6 +15,7 @@ module.exports = class AccountsManager {
                 privKey: privKey,
                 pubKey: pubKey
             },
+            address: utils.calcAddress(pubKey),
             balance: balance | 0
         })
     }
@@ -29,5 +31,19 @@ module.exports = class AccountsManager {
 
     getAmount(alias) {
         return accounts.get(alias)['balance'];
+    }
+
+    getAccountsUntil(amount) {
+
+    }
+
+    getAccountByAddress(address) {
+        let entries = accounts.entries();
+        for (let entry of entries) {
+            const it = entry[1]
+            if (it.address === address) {
+                return it
+            }
+        }
     }
 }
