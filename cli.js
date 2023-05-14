@@ -20,17 +20,15 @@ let knownMiners = walletConfig.knownMiners || [];
 let startingBalances = walletConfig.genesis ? walletConfig.genesis.startingBalances : {};
 
 let genesis = Blockchain.makeGenesis({
-    blockClass: Block,
-    transactionClass: Transaction,
-    startingBalances: startingBalances
+    blockClass: Block, transactionClass: Transaction, startingBalances: startingBalances
 });
 
 console.log(`Starting ${name}`);
 let client = new TcpClient({
     name: name,
     connection: walletConfig.connection,
-    startingBlock: genesis, 
-    wordlist: walletConfig.mnemonic,
+    startingBlock: genesis,
+    mnemonic: walletConfig.mnemonic,
     passphrase: walletConfig.passphrase
 });
 
@@ -38,6 +36,17 @@ let client = new TcpClient({
 client.log = function () {
 };
 
+this.accountsManager.createNewAccount("m/1'", client.masterNode, "my-account", 10000);
+this.accountsManager.createNewAccount("m/2'", client.masterNode, "another-account", 5000);
+const allBalances = this.accountsManager.getAllBalances();
+console.table(allBalances);
+
+const newAccountGenesis = {}
+allBalances.forEach(it => {
+    newAccountGenesis[it.address] = it.balance
+})
+
+client.lateGenesis(newAccountGenesis);
 
 // Register with known miners and begin mining.
 client.initialize(knownMiners);
@@ -129,14 +138,7 @@ function readUserInput() {
 }
 
 let rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
+    input: process.stdin, output: process.stdout
 });
-
-this.accountsManager.createNewAccount("m/1'", client.masterNode, "my-account", 10000);
-this.accountsManager.createNewAccount("m/2'", client.masterNode, "another-account", 5000);
-//this.accountsManager.createNewAccount("m/0", "root", walletConfig.keyPair.private, walletConfig.keyPair.public, 10000);
-// accountsManager.createNewAccount("path2", "another-account", "privKey2", "pubKey2", 5000);
-console.table(this.accountsManager.getAllBalances());
 
 readUserInput();
