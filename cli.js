@@ -11,6 +11,7 @@ if (process.argv.length !== 3) {
     process.exit();
 }
 const walletConfig = JSON.parse(readFileSync(process.argv[2]));
+this.accountsManager = new AccountsManager();
 
 let name = walletConfig.name;
 
@@ -73,20 +74,30 @@ function readUserInput() {
                 });
                 break;
             case 't':
-                rl.question(`  amount: `, (amt) => {
-                    amt = parseInt(amt, 10);
-                    if (amt > client.availableGold) {
-                        console.log(`***Insufficient gold. You only have ${client.availableGold}.`);
+                rl.question(`  account alias: `, (alias) => {
+                    let fromAccount = new AccountsManager().getAccountByAlias(alias);
+                    if (fromAccount == null) {
+                        console.log(`***Account (${alias}) not found!`);
                         readUserInput();
                     } else {
-                        rl.question(`  address: `, (addr) => {
-                            let output = {amount: amt, address: addr};
-                            console.log(`Transferring ${amt} gold to ${addr}.`);
-                            client.postTransaction([output]);
-                            readUserInput();
+                        const fromAddress = fromAccount['address']
+                        rl.question(`  amount: `, (amt) => {
+                            amt = parseInt(amt, 10);
+                            let availableGold = client.getAvailableGoldByAddress(fromAddress);
+                            if (amt > availableGold) {
+                                console.log(`***Insufficient gold. This accout only has ${availableGold}.`);
+                                readUserInput();
+                            } else {
+                                rl.question(`  address: `, (addr) => {
+                                    let output = {amount: amt, address: addr};
+                                    console.log(`Transferring ${amt} gold to ${addr}.`);
+                                    client.postTransactionByAddress(fromAddress, [output]);
+                                    readUserInput();
+                                });
+                            }
                         });
                     }
-                });
+                })
                 break;
             case 'r':
                 client.resendPendingTransactions();
@@ -120,8 +131,7 @@ let rl = readline.createInterface({
     output: process.stdout
 });
 
-let accountsManager = new AccountsManager();
-accountsManager.createNewAccount("m/0", "root", walletConfig.keyPair.private,walletConfig.keyPair.public, 10000);
+this.accountsManager.createNewAccount("m/0", "root", walletConfig.keyPair.private, walletConfig.keyPair.public, 10000);
 // accountsManager.createNewAccount("path2", "another-account", "privKey2", "pubKey2", 5000);
 
 readUserInput();

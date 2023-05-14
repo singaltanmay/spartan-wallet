@@ -33,6 +33,7 @@ module.exports = class TcpClient extends Client {
         super({name, net: new TcpWallet(), startingBlock, keyPair});
 
         // Setting up the server to listen for connections
+        this.accountsManager = new AccountsManager();
         this.connection = connection;
         this.srvr = net.createServer();
         this.srvr.on('connection', (client) => {
@@ -100,11 +101,10 @@ module.exports = class TcpClient extends Client {
 
     showAllBalances() {
         this.log("Showing balances:");
-        let accountsManager = new AccountsManager();
         for (let [id, balance] of this.lastConfirmedBlock.balances) {
-            const account = accountsManager.getAccountByAddress(id)
+            const account = this.accountsManager.getAccountByAddress(id)
             let walletContextString = '<remote>  ';
-            if(account !== undefined){
+            if (account !== undefined) {
                 const {alias, path} = account
                 if (alias !== undefined && alias !== " ") {
                     walletContextString = `<${path}>:(${alias})`
@@ -114,14 +114,60 @@ module.exports = class TcpClient extends Client {
         }
     }
 
+    getConfirmedBalanceByAddress(address) {
+        return this.lastConfirmedBlock.balanceOf(address);
+    }
 
-    get availableGold() {
+    getAvailableGoldByAddress(address) {
         let pendingSpent = 0;
         this.pendingOutgoingTransactions.forEach((tx) => {
-            pendingSpent += tx.totalOutput();
+            if (tx.from === address) {
+                pendingSpent += tx.totalOutput();
+            }
         });
 
-        return this.confirmedBalance - pendingSpent;
+        return this.getConfirmedBalanceByAddress - pendingSpent;
+    }
+
+    postGenericTransactionByAddress(address, txData) {
+        // Creating a transaction, with defaults for the
+        // from, nonce, and pubKey fields.
+        let keyPair = this.accountsManager.getAccountByAddress(address).keyPair;
+        let tx = Blockchain.makeTransaction(
+            Object.assign({
+                    from: address,
+                    nonce: this.nonce,
+                    pubKey: keyPair.pubKey,
+                },
+                txData));
+
+        tx.sign(keyPair.privKey);
+
+        // Adding transaction to pending.
+        this.pendingOutgoingTransactions.set(tx.id, tx);
+
+        this.nonce++;
+
+        this.net.broadcast(Blockchain.POST_TRANSACTION, tx);
+
+        return tx;
+    }
+
+    postTransactionByAddress(address, outputs, fee = Blockchain.DEFAULT_TX_FEE) {
+        // We calculate the total value of gold needed.
+        let totalPayments = outputs.reduce((acc, {amount}) => acc + amount, 0) + fee;
+
+        // Make sure the client has enough gold.
+        let availableGold = this.getAvailableGoldByAddress(address);
+        if (totalPayments > availableGold) {
+            throw new Error(`Requested ${totalPayments}, but account only has ${availableGold}.`);
+        }
+
+        // Create and broadcast the transaction.
+        return this.postGenericTransactionByAddress(address, {
+            outputs: outputs,
+            fee: fee,
+        });
     }
 
     saveJson(fileName) {
