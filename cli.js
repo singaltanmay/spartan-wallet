@@ -30,12 +30,14 @@ let client = new TcpClient({
     name: name,
     connection: walletConfig.connection,
     startingBlock: genesis, 
-    wordlist: walletConfig.mnemonic
+    wordlist: walletConfig.mnemonic,
+    passphrase: walletConfig.passphrase
 });
 
 // Silencing the logging messages
 client.log = function () {
 };
+
 
 // Register with known miners and begin mining.
 client.initialize(knownMiners);
