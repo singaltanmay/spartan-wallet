@@ -2,8 +2,10 @@ const net = require('net');
 
 const {writeFileSync} = require('fs');
 
-const {FakeNet, Client, Block, Blockchain, Transaction} = require('spartan-gold')
+const {FakeNet, Client, Block, Blockchain, Transaction, utils} = require('spartan-gold')
 const AccountsManager = require("./accounts-manager");
+
+const KeyGenerator = require("./key-generator.js").KeyGenerator;
 
 /**
  * This extends the FakeNet class to actually communicate over the network.
@@ -29,12 +31,13 @@ module.exports = class TcpClient extends Client {
      * also takes a JSON object for the connection information and sets
      * up a listener to listen for incoming connections.
      */
-    constructor({name, startingBlock, keyPair, connection} = {}) {
+    constructor({name, startingBlock, keyPair, connection, wordlist} = {}) {
         super({name, net: new TcpWallet(), startingBlock, keyPair});
 
         // Setting up the server to listen for connections
         this.accountsManager = new AccountsManager();
         this.connection = connection;
+        this.wordlist = wordlist;
         this.srvr = net.createServer();
         this.srvr.on('connection', (client) => {
             this.log('Received connection');
@@ -69,7 +72,7 @@ module.exports = class TcpClient extends Client {
                 msg: TcpClient.REGISTER,
                 o: {
                     name: this.name,
-                    address: this.address,
+                    address: utils.calcAddress(this.keyPair.publicKey.toString('hex')),
                     connection: this.connection,
                 }
             };
@@ -81,11 +84,29 @@ module.exports = class TcpClient extends Client {
      * Begins mining and registers with any known miners.
      */
     initialize(knownMinerConnections) {
-        this.knownMiners = knownMinerConnections;
-        this.srvr.listen(this.connection.port);
-        for (let m of knownMinerConnections) {
-            this.registerWith(m);
-        }
+        /*Creates a mnemonic and derives a seed from it*/
+    /*derives private and public key from the seed. */
+    console.log(this.wordlist)
+    let m = new KeyGenerator(this.wordlist);
+    let seed = m.generateSeed();
+
+    console.log("Your mnemonic is: (Don't forget it!)");
+    m.printMnemonic();
+
+    let masterKey = m.generateMasterKey(seed);
+    console.log(masterKey.toString('hex'))
+    this.masterNode = m.generateMasterNode(masterKey);
+
+    console.log(this.masterNode)
+    this.keyPair = this.masterNode.derivePath("m/0'");
+    this.address = utils.calcAddress(this.keyPair.publicKey.toString('hex'));
+    
+
+    this.knownMiners = knownMinerConnections;
+    this.srvr.listen(this.connection.port);
+    for (let m of knownMinerConnections) {
+      this.registerWith(m);
+    }
     }
 
     /**
@@ -137,11 +158,11 @@ module.exports = class TcpClient extends Client {
             Object.assign({
                     from: address,
                     nonce: this.nonce,
-                    pubKey: keyPair.pubKey,
+                    pubKey: keyPair.publicKey.toString("hex"),
                 },
                 txData));
 
-        tx.sign(keyPair.privKey);
+        tx.sign(keyPair.privateKey.toString("hex"));
 
         // Adding transaction to pending.
         this.pendingOutgoingTransactions.set(tx.id, tx);
@@ -175,7 +196,7 @@ module.exports = class TcpClient extends Client {
             name: this.name,
             connection: this.connection,
             keyPair: this.keyPair,
-            knownMiners: this.knownMiners,
+            knownMiners: this.knownMiners, 
         };
         writeFileSync(fileName, JSON.stringify(state));
     }

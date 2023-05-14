@@ -28,9 +28,9 @@ let genesis = Blockchain.makeGenesis({
 console.log(`Starting ${name}`);
 let client = new TcpClient({
     name: name,
-    keyPair: walletConfig.keyPair,
     connection: walletConfig.connection,
-    startingBlock: genesis
+    startingBlock: genesis, 
+    wordlist: walletConfig.mnemonic
 });
 
 // Silencing the logging messages
@@ -131,7 +131,10 @@ let rl = readline.createInterface({
     output: process.stdout
 });
 
-this.accountsManager.createNewAccount("m/0", "root", walletConfig.keyPair.private, walletConfig.keyPair.public, 10000);
+this.accountsManager.createNewAccount("m/1'", client.masterNode, "my-account", 10000);
+this.accountsManager.createNewAccount("m/2'", client.masterNode, "another-account", 5000);
+//this.accountsManager.createNewAccount("m/0", "root", walletConfig.keyPair.private, walletConfig.keyPair.public, 10000);
 // accountsManager.createNewAccount("path2", "another-account", "privKey2", "pubKey2", 5000);
+console.table(this.accountsManager.getAllBalances());
 
 readUserInput();
