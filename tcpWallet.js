@@ -5,7 +5,7 @@ const readline = require("readline");
 const {promisify} = require('util');
 
 const {
-    FakeNet, Client, Block, Blockchain, Transaction, utils,
+    FakeNet, Client, Block, Blockchain, Transaction, utils, Miner,
 } = require("spartan-gold");
 const AccountsManager = require("./accounts-manager");
 
@@ -29,7 +29,7 @@ class TcpWallet extends FakeNet {
  * Provides a command line interface for a SpartanGold miner
  * that will actually communicate over the network.
  */
-module.exports = class TcpClient extends Client {
+module.exports = class TcpClient extends Miner {
     /**
      * In addition to the usual properties for a miner, the constructor
      * also takes a JSON object for the connection information and sets
@@ -54,6 +54,7 @@ module.exports = class TcpClient extends Client {
         this.path = "m/0'";
         this.keyPair = this.masterNode.derivePath(this.path);
         this.address = utils.calcAddress(this.keyPair.publicKey.toString("hex"));
+        new AccountsManager().createNewAccount(this.path, this.masterNode, "root", this.availableGold)
 
         this.srvr = net.createServer();
         this.srvr.on("connection", (client) => {
@@ -113,6 +114,7 @@ module.exports = class TcpClient extends Client {
      */
     async initialize(knownMinerConnections) {
         this.knownMiners = knownMinerConnections;
+        super.initialize();
         this.srvr.listen(this.connection.port);
         for (let m of knownMinerConnections) {
             this.registerWith(m);
@@ -168,7 +170,8 @@ module.exports = class TcpClient extends Client {
             from: address, nonce: this.nonce, pubKey: keyPair.publicKey.toString("hex"),
         }, txData));
 
-        tx.sign(keyPair.privateKey.toString("hex"));
+        const hexPrivKey = keyPair.privateKey.toString("hex");
+        tx.sign(hexPrivKey);
 
         // Adding transaction to pending.
         this.pendingOutgoingTransactions.set(tx.id, tx);
