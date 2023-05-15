@@ -1,0 +1,7 @@
+{
+  "name": "Spartan Wallet 2",
+  "connection": {
+    "hostname": "localhost",
+    "port": 9001
+  }
+}

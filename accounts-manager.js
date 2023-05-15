@@ -5,11 +5,11 @@ const crypto = require("crypto");
 const ecKeyUtils = require('eckey-utils');
 
 let accounts = new Map();
-let keyPair;
 let counter = 1;
 
 module.exports = class AccountsManager {
   createNewAccount(path, masterNode, alias, balance) {
+    let keyPair;
     if (accounts.has(alias)) {
       throw new Error(
         `Account with alias "${alias}" already exists. Choose another name.`
@@ -71,7 +71,7 @@ module.exports = class AccountsManager {
         path: k,
         alias: v["alias"],
         address: v["address"],
-        balance: v["balance"],
+        balance: v["balance"]
       })
     );
     return result;
@@ -86,6 +86,16 @@ module.exports = class AccountsManager {
     for (let entry of entries) {
       const it = entry[1];
       if (it.alias === alias) {
+        return it;
+      }
+    }
+  }
+
+  getAccountByIndex(index){
+    let entries = accounts.entries();
+    for (let entry of entries) {
+      const it = entry[1];
+      if (it.path === `m/${index}'`) {
         return it;
       }
     }

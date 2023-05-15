@@ -6,7 +6,6 @@ const ecKeyUtils = require('eckey-utils');
 
 const {
   FakeNet,
-  Client,
   Block,
   Blockchain,
   Transaction,
@@ -20,7 +19,7 @@ const KeyGenerator = require("./key-generator.js").KeyGenerator;
 /**
  * This extends the FakeNet class to actually communicate over the network.
  */
-class TcpWallet extends FakeNet {
+class tcpWallet extends FakeNet {
   sendMessage(address, msg, o) {
     if (typeof o === "string") o = JSON.parse(o);
     let data = { msg, o };
@@ -49,12 +48,13 @@ module.exports = class TcpClient extends Miner {
     mnemonic,
     passphrase,
   } = {}) {
-    super({ name, net: new TcpWallet(), startingBlock, keyPair });
+    super({ name, net: new tcpWallet(), startingBlock, keyPair });
     // Setting up the server to listen for connections
     this.accountsManager = new AccountsManager();
     this.connection = connection;
     this.mnemonic = mnemonic;
     this.passphrase = passphrase;
+    
 
     /*Creates a mnemonic and derives a seed from it*/
     let m = new KeyGenerator(this.mnemonic);
@@ -70,8 +70,6 @@ module.exports = class TcpClient extends Miner {
     /*derives private and public key from the seed. */
     this.keyPair = this.masterNode.derivePath(this.path);
 
-    console.log(this.keyPair)
-
     /*Change Private/Public Key to PEM format*/
     const curveName = 'secp256k1';
     const pems = ecKeyUtils.generatePem({curveName, privateKey: this.keyPair.privateKey, publicKey: this.keyPair.publicKey});
@@ -85,7 +83,6 @@ module.exports = class TcpClient extends Miner {
     const pkcs8PemFromSec1 = crypto.createPrivateKey({key: sec1Pem, format: 'pem', type: 'sec1'}).export({type: 'pkcs8', format: 'pem'}).toString();
 
     this.keyPair = {publicKey: spkix509Pem, pkcs8PemFromSec1}
-    console.log(this.keyPair)
 
     this.address = utils.calcAddress(this.keyPair.publicKey);
     new AccountsManager().createNewAccount(
@@ -201,25 +198,13 @@ module.exports = class TcpClient extends Miner {
       }
     });
 
-    return this.getConfirmedBalanceByAddress - pendingSpent;
+    return this.getConfirmedBalanceByAddress(address) - pendingSpent | 0;
   }
 
   postGenericTransactionByAddress(address, txData) {
     // Creating a transaction, with defaults for the
     // from, nonce, and pubKey fields.
     let keyPair = this.accountsManager.getAccountByAddress(address).keyPair;
-    console.log(keyPair)
-    //let publicKey = keyPair.publicKey;
-    //let privateKeyBuffer = keyPair.privateKey;
-    
-    //const curveName = 'secp256k1';
-    //const pems = ecKeyUtils.generatePem({curveName, privateKey: privateKeyBuffer, publicKey: publicKey});
-    
-    //const x509Pem = pems.publicKey;
-    //const sec1Pem = pems.privateKey;
-
-    //const spkix509Pem = crypto.createPublicKey({ key: x509Pem, format: 'pem' }).export({ type: 'spki', format: 'pem' });
-    //console.log(spkix509Pem)
     let tx = Blockchain.makeTransaction(
       Object.assign(
         {
@@ -230,19 +215,15 @@ module.exports = class TcpClient extends Miner {
         txData
       )
     );
-
-    
-    //const pkcs8PemFromSec1 = crypto.createPrivateKey({key: sec1Pem, format: 'pem', type: 'sec1'}).export({type: 'pkcs8', format: 'pem'}).toString();
-    //console.log(pkcs8PemFromSec1)
     
     tx.sign(keyPair.privateKey);
 
     // Adding transaction to pending.
     this.pendingOutgoingTransactions.set(tx.id, tx);
-
+    
     this.nonce++;
-
     this.net.broadcast(Blockchain.POST_TRANSACTION, tx);
+
 
     return tx;
   }

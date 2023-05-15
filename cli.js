@@ -11,7 +11,7 @@ if (process.argv.length !== 3) {
     process.exit();
 }
 const walletConfig = JSON.parse(readFileSync(process.argv[2]));
-this.accountsManager = new AccountsManager();
+
 
 let name = walletConfig.name;
 
@@ -36,9 +36,11 @@ let client = new TcpClient({
 client.log = function () {
 };
 
+client.accountsManager = new AccountsManager();
+
 client.accountsManager.createNewAccount("m/1'", client.masterNode, "my-account", 10000);
-client.accountsManager.createNewAccount("m/2'", client.masterNode, "another-account", 5000);
-const allBalances = this.accountsManager.getAllBalances();
+//client.accountsManager.createNewAccount("m/2'", client.masterNode, "another-account", 5000);
+const allBalances = client.accountsManager.getAllBalances();
 console.table(allBalances);
 
 const newAccountGenesis = {}
@@ -53,7 +55,7 @@ client.initialize(knownMiners);
 
 function readUserInput() {
     rl.question(`
-  Funds: ${client.availableGold}
+  Funds: ${client.getAvailableGoldByAddress(client.address)}
   Address: ${client.address}
   Pending transactions: ${client.showPendingOut()}
   
@@ -64,6 +66,7 @@ function readUserInput() {
   *show (b)alances?
   *show blocks for (d)ebugging and exit?
   *(s)ave your state?
+  *create (a)ccount
   *e(x)it without saving?
   
   Your choice: `, (answer) => {
@@ -86,7 +89,7 @@ function readUserInput() {
                 break;
             case 't':
                 rl.question(`  account alias: `, (alias) => {
-                    let fromAccount = new AccountsManager().getAccountByAlias(alias);
+                    let fromAccount = client.accountsManager.getAccountByAlias(alias);
                     if (fromAccount == null) {
                         console.log(`***Account (${alias}) not found!`);
                         readUserInput();
@@ -95,13 +98,14 @@ function readUserInput() {
                         rl.question(`  amount: `, (amt) => {
                             amt = parseInt(amt, 10);
                             let availableGold = client.getAvailableGoldByAddress(fromAddress);
+                            console.log(availableGold)
                             if (amt > availableGold) {
                                 console.log(`***Insufficient gold. This accout only has ${availableGold}.`);
                                 readUserInput();
                             } else {
                                 rl.question(`  address: `, (addr) => {
                                     let output = {amount: amt, address: addr};
-                                    console.log(`Transferring ${amt} gold to ${addr}.`);
+                                    console.log(`Transferring ${amt} gold from ${fromAddress} to ${addr}.`);
                                     client.postTransactionByAddress(fromAddress, [output]);
                                     readUserInput();
                                 });
@@ -129,6 +133,38 @@ function readUserInput() {
                 client.showBlockchain();
                 process.exit(0);
             /* falls through */
+            case 'a':
+                //client.accountsManager.createNewAccount("m/1'", client.masterNode, "my-account", 10000);
+                rl.question(`Account Alias? `, (alias) => {
+                    let accountAlias = client.accountsManager.getAccountByAlias(alias);
+                    if (accountAlias) {
+                        console.log(`***Account alias "${alias}" already exists!`);
+                        readUserInput();
+                    } else {
+                        accountAlias = alias;
+                        rl.question(`Index (optional): `, (index) => {
+                            let accountIndex = client.accountsManager.getAccountByIndex(index);
+                            if (accountIndex) {
+                                console.log(`***Account at index m/${index} already exists!`);
+                                readUserInput();
+                            } else {
+                                accountIndex = index;
+                                rl.question(`Transfer funds(amount): `, (amount) => {
+                                    client.accountsManager.createNewAccount(`m/${accountIndex}'`, client.masterNode, accountAlias, 0);
+                                    console.log(client.accountsManager.getAllBalances());
+                                    
+                                    let toAddress = client.accountsManager.getAccountByAlias(accountAlias).address;
+                                    let output = {amount: parseInt(amount), address: toAddress};
+                                    console.log(`Transferring ${amount} gold to ${toAddress}.`);
+                                    console.log(client.address);
+                                    client.postTransactionByAddress(client.address, [output]);
+                                    readUserInput();
+                                });
+                            }
+                        });
+                    }
+                })
+                break;
             default:
                 console.log(`Unrecognized choice: ${answer}`);
         }
