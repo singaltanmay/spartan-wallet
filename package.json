@@ -9,9 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "asn1js": "^3.0.5",
     "bip32": "^4.0.0",
     "bitcoinjs-lib": "^6.1.0",
+    "eckey-utils": "^0.7.13",
     "elliptic": "^6.5.4",
+    "pem": "^1.14.7",
     "spartan-gold": "^1.0.7",
     "tiny-secp256k1": "^2.2.1"
   }

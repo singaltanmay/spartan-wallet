@@ -36,8 +36,8 @@ let client = new TcpClient({
 client.log = function () {
 };
 
-this.accountsManager.createNewAccount("m/1'", client.masterNode, "my-account", 10000);
-this.accountsManager.createNewAccount("m/2'", client.masterNode, "another-account", 5000);
+client.accountsManager.createNewAccount("m/1'", client.masterNode, "my-account", 10000);
+client.accountsManager.createNewAccount("m/2'", client.masterNode, "another-account", 5000);
 const allBalances = this.accountsManager.getAllBalances();
 console.table(allBalances);
 
